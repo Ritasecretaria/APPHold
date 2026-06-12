@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hold On — Checklist</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F0F2F5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px}
+.app{background:#fff;border-radius:16px;overflow:hidden;width:100%;max-width:480px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.screen{display:none}.screen.active{display:block}
+.topbar{background:#1B3F6B;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.topbar-title{color:#fff;font-size:15px;font-weight:500;flex:1;text-align:center}
+.topbar-sub{color:#9BBFDE;font-size:11px;margin-top:1px;text-align:center}
+.topbar-left{width:60px;display:flex;align-items:center}
+.topbar-right{width:60px;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.icon-btn{background:transparent;border:none;cursor:pointer;color:#9BBFDE;display:flex;align-items:center;padding:2px;font-size:20px;line-height:1}
+.icon-btn:hover{color:#fff}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;cursor:pointer;flex-shrink:0}
+.av-0{background:#D6E4F0;color:#1B3F6B}.av-1{background:#E1F5EE;color:#085041}
+.av-2{background:#FAECE7;color:#712B13}.av-3{background:#EEEDFE;color:#3C3489}
+.av-4{background:#FAEEDA;color:#633806}.av-5{background:#FCEBEB;color:#A32D2D}
+.av-6{background:#EAF3DE;color:#27500A}.av-7{background:#E6F1FB;color:#0C447C}
+.av-mgr{background:#2E6DA4;color:#fff}
+.body{padding:20px}
+.section-label{font-size:10px;font-weight:600;color:#888;letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;margin-top:2px}
+.tab-row{display:flex;gap:6px;margin-bottom:18px}
+.tab{padding:6px 14px;border-radius:99px;font-size:13px;cursor:pointer;border:1px solid #ddd;background:transparent;color:#666;transition:all .15s}
+.tab.active{background:#1B3F6B;color:#fff;border-color:#1B3F6B}
+.card{background:#fff;border:1px solid #eee;border-radius:10px;margin-bottom:8px}
+.row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer;transition:background .1s;border-radius:10px}
+.row:hover{background:#F7F9FB}
+.task-check{width:20px;height:20px;border-radius:4px;border:1.5px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px}
+.task-check.checked{background:#1B3F6B;border-color:#1B3F6B}
+.task-check.checked::after{content:'';display:block;width:10px;height:6px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.task-text{font-size:13px;color:#1a1a1a;flex:1;line-height:1.4}
+.task-text.done{text-decoration:line-through;color:#aaa}
+.task-time{font-size:11px;color:#aaa;margin-top:2px}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:99px;margin-left:5px;vertical-align:middle}
+.bd{background:#E1F5EE;color:#085041}.bw{background:#EEEDFE;color:#3C3489}
+.prog-wrap{margin-bottom:18px}
+.prog-bar-bg{background:#F0F2F5;border-radius:99px;height:6px}
+.prog-bar{background:#1B3F6B;height:6px;border-radius:99px;transition:width .3s}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.stat{background:#F7F9FB;border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:22px;font-weight:500;color:#1a1a1a}
+.stat-lbl{font-size:10px;color:#888;margin-top:2px}
+.member-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.member-row:last-child{border-bottom:none}
+.mini-bar-bg{width:80px;background:#F0F2F5;border-radius:99px;height:5px}
+.mini-bar{background:#1B3F6B;height:5px;border-radius:99px}
+.user-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.user-btn{background:#F7F9FB;border:1px solid #e8e8e8;border-radius:12px;padding:16px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s}
+.user-btn:hover{border-color:#1B3F6B}
+.user-btn.is-mgr{border:2px solid #1B3F6B}
+.user-btn span{font-size:13px;color:#1a1a1a}
+.user-btn small{font-size:11px;color:#888}
+.cfg-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.cfg-row:last-child{border-bottom:none}
+.cfg-name{flex:1;font-size:13px;color:#1a1a1a}
+.cfg-sub{font-size:11px;color:#aaa}
+.action-btn{background:transparent;border:1px solid #ddd;border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;color:#555;transition:all .15s}
+.action-btn:hover{border-color:#1B3F6B;color:#1B3F6B}
+.del-btn{color:#c0392b;border-color:#f5c6c2}
+.del-btn:hover{background:#fff5f5;border-color:#e74c3c}
+.add-btn{background:#1B3F6B;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:12px}
+.add-btn:hover{background:#2E6DA4}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:22px;width:90%;max-width:340px}
+.modal h3{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:16px}
+.field-label{font-size:12px;color:#666;margin-bottom:5px;margin-top:12px}
+.modal input,.modal select{width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;color:#1a1a1a;outline:none}
+.modal input:focus,.modal select:focus{border-color:#1B3F6B}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.btn-cancel{background:transparent;border:1px solid #ddd;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;color:#666}
+.btn-save{background:#1B3F6B;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:500}
+.cfg-section{background:#F7F9FB;border-radius:12px;padding:14px;margin-bottom:16px}
+.empty{text-align:center;padding:20px 0;font-size:13px;color:#bbb}
+.error-msg{color:#c0392b;font-size:12px;margin-top:8px;min-height:16px}
+.brand{font-size:11px;color:#9BBFDE;letter-spacing:.08em;text-align:center;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div id="sc-login" class="screen active">
+    <div class="topbar">
+      <div class="topbar-left"></div>
+      <div>
+        <div class="topbar-title">Hold On</div>
+        <div class="brand">Agência de Secretaria Virtual</div>
+      </div>
+      <div class="topbar-right"></div>
+    </div>
+    <div class="body">
+      <div style="max-width:320px;margin:24px auto">
+        <p style="text-align:center;font-size:13px;color:#888;margin-bottom:18px">Quem é você hoje?</p>
+        <div class="user-grid" id="login-grid"></div>
+        <div style="text-align:center">
+          <button class="action-btn" onclick="showModal('modal-add-user')">+ Nova usuária</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sc-checklist" class="screen">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="icon-btn" onclick="logout()" title="Sair">&#8592;</button>
+      </div>
+      <div>
+        <div class="topbar-title" id="cl-name">Tarefas</div>
+        <div class="topbar-sub" id="cl-date"></div>
+      </div>
+      <div class="topbar-right">
+        <div id="cl-av" class="avatar av-mgr" style="width:30px;height:30px;font-size:12px"></div>
+        <button class="icon-btn" id="btn-panel" onclick="showPanel()" title="Painel" style="display:none">&#9723;</button>
+        <button class="icon-btn" id="btn-cfg" onclick="askCfgPassword()" title="Configurações" style="display:none">&#9881;</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="tab-row">
+        <button class="tab active" id="tab-d" onclick="switchTab('daily')">Diárias</button>
+        <button class="tab" id="tab-w" onclick="switchTab('weekly')">Semanais</button>
+      </div>
+      <div class="prog-wrap">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:12px;color:#888" id="prog-lbl"></span>
+          <span style="font-size:12px;font-weight:500;color:#1a1a1a" id="prog-pct"></span>
+        </div>
+        <div class="prog-bar-bg"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+      </div>
+      <div id="task-list"></div>
+    </div>
+  </div>
+
+  <div id="sc-panel" class="screen">
+    <div class="topbar">
+      <div class="topbar-left"><button class="icon-btn" onclick="showScreen('sc-checklist')">&#8592;</button></div>
+      <div class="topbar-title">Painel da gestora</div>
+      <div class="topbar-right"></div>
+    </div>
+    <div class="body">
+      <div class="tab-row">
+        <button class="tab active" id="ptab-d" onclick="switchPanelTab('daily')">Diárias</button>
+        <button class="tab" id="ptab-w" onclick="switchPanelTab('weekly')">Semanais</button>
+      </div>
+      <div class="stat-grid" id="panel-stats"></div>
+      <div class="section-label">Por secretária</div>
+      <div id="panel-members"></div>
+    </div>
+  </div>
+
+  <div id="sc-cfg" class="screen">
+    <div class="topbar">
+      <div class="topbar-left"><button class="icon-btn" onclick="showScreen('sc-checklist')">&#8592;</button></div>
+      <div class="topbar-title">Configurações</div>
+      <div class="topbar-right"></div>
+    </div>
+    <div class="body">
+      <div class="section-label">Usuárias</div>
+      <div class="cfg-section">
+        <div id="cfg-users"></div>
+        <button class="add-btn" onclick="showModal('modal-add-user')">+ Adicionar usuária</button>
+      </div>
+      <div class="section-label">Tarefas diárias</div>
+      <div class="cfg-section">
+        <div id="cfg-daily"></div>
+        <button class="add-btn" onclick="openTaskModal('daily',null)">+ Adicionar tarefa diária</button>
+      </div>
+      <div class="section-label">Tarefas semanais</div>
+      <div class="cfg-section">
+        <div id="cfg-weekly"></div>
+        <button class="add-btn" onclick="openTaskModal('weekly',null)">+ Adicionar tarefa semanal</button>
+      </div>
+      <div class="section-label">Segurança</div>
+      <div class="cfg-section">
+        <div style="font-size:13px;color:#555;margin-bottom:10px">Alterar senha das configurações</div>
+        <div class="field-label" style="margin-top:0">Senha atual</div>
+        <input type="password" id="pw-current" placeholder="Digite a senha atual" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:8px">
+        <div class="field-label">Nova senha</div>
+        <input type="password" id="pw-new" placeholder="Digite a nova senha" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:8px">
+        <div class="field-label">Confirmar nova senha</div>
+        <input type="password" id="pw-confirm" placeholder="Repita a nova senha" style="width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:8px">
+        <div class="error-msg" id="pw-msg"></div>
+        <button class="add-btn" style="margin-top:4px" onclick="changePassword()">Salvar nova senha</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal-password">
+  <div class="modal">
+    <h3>&#128274; Acesso restrito</h3>
+    <div style="font-size:13px;color:#666;margin-bottom:12px">Digite a senha para acessar as configurações.</div>
+    <input type="password" id="cfg-pw-input" placeholder="Senha" onkeydown="if(event.key==='Enter')checkPassword()">
+    <div class="error-msg" id="cfg-pw-error"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('modal-password')">Cancelar</button>
+      <button class="btn-save" onclick="checkPassword()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-user">
+  <div class="modal">
+    <h3 id="modal-user-title">Nova usuária</h3>
+    <div class="field-label">Nome</div>
+    <input id="u-name" type="text" placeholder="Nome da secretária">
+    <div class="field-label">Função</div>
+    <select id="u-role">
+      <option value="secretary">Secretária</option>
+      <option value="manager">Gestora</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('modal-add-user')">Cancelar</button>
+      <button class="btn-save" onclick="saveUser()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-task">
+  <div class="modal">
+    <h3 id="modal-task-title">Nova tarefa</h3>
+    <div class="field-label">Descrição da tarefa</div>
+    <input id="t-text" type="text" placeholder="Ex: Confirmar presença dos pacientes">
+    <div class="field-label">Horário / referência</div>
+    <input id="t-time" type="text" placeholder="Ex: 08h–09h, Ao receber, Semanal">
+    <div class="field-label">Tipo</div>
+    <select id="t-type"><option value="daily">Diária</option><option value="weekly">Semanal</option></select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('modal-task')">Cancelar</button>
+      <button class="btn-save" onclick="saveTask()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AV_COLORS=['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7'];
+const TODAY_KEY=new Date().toISOString().slice(0,10);
+const WEEK_KEY=(()=>{const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1),m=new Date(d.setDate(diff));return m.toISOString().slice(0,10);})();
+const TODAY_STR=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+const STORAGE_KEY='holdon_app_v1';
+const DEFAULT_PW='Hold2026';
+
+let state={users:[],dailyTasks:[],weeklyTasks:[],cfgPassword:DEFAULT_PW};
+let currentUser=null,currentTab='daily',panelTab='daily';
+let editingUserId=null,editingTaskId=null,editingTaskType=null;
+
+function loadState(){
+  try{const r=localStorage.getItem(STORAGE_KEY);if(r)state=JSON.parse(r);}catch(e){}
+  if(!state.cfgPassword)state.cfgPassword=DEFAULT_PW;
+  if(!state.users||!state.users.length){
+    state={
+      cfgPassword:DEFAULT_PW,
+      users:[{id:'mgr',name:'Gestora',role:'manager',av:'av-mgr'}],
+      dailyTasks:[
+        {id:'d1',text:'Recepção e saudação de leads recebidos',time:'Ao receber'},
+        {id:'d2',text:'Enviar informações e conduzir ao agendamento',time:'Ao receber'},
+        {id:'d3',text:'Confirmar pagamentos e registrar na agenda',time:'Ao receber'},
+        {id:'d4',text:'1ª confirmação de presença — sessões do dia',time:'08h–09h'},
+        {id:'d5',text:'Enviar links — sessões até 12h',time:'18h do dia anterior'},
+        {id:'d6',text:'2ª confirmação de presença',time:'13h–14h'},
+        {id:'d7',text:'Enviar links — sessões após 12h',time:'11h'},
+        {id:'d8',text:'3ª confirmação de presença',time:'17h'},
+        {id:'d9',text:'Aviso de desmarcação por falta de resposta',time:'18h se necessário'},
+        {id:'d10',text:'Mensagem pós-sessão + proposta de novo agendamento',time:'≥1h após sessão'},
+      ],
+      weeklyTasks:[
+        {id:'w1',text:'Atualizar planilha de pacientes',time:'Semanal'},
+        {id:'w2',text:'Verificar pacotes próximos do vencimento',time:'Semanal'},
+        {id:'w3',text:'Atualizar planilha Controle Financeiro',time:'Semanal'},
+        {id:'w4',text:'Anotar cobranças com data fixa na agenda',time:'Semanal'},
+        {id:'w5',text:'Revisar agenda da semana seguinte',time:'Semanal'},
+      ]
+    };
+    saveState();
+  }
+}
+
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function checkKey(uid,type,taskId){const p=type==='daily'?TODAY_KEY:WEEK_KEY;return`holdon_check_${uid}_${type}_${p}_${taskId}`;}
+function getCheck(uid,type,taskId){return localStorage.getItem(checkKey(uid,type,taskId))==='1';}
+function setCheck(uid,type,taskId,val){if(val)localStorage.setItem(checkKey(uid,type,taskId),'1');else localStorage.removeItem(checkKey(uid,type,taskId));}
+function uid_gen(){return 't'+Date.now()+Math.random().toString(36).slice(2,6);}
+function initials(name){return name.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+
+function renderLogin(){
+  document.getElementById('login-grid').innerHTML=state.users.map(u=>`
+    <div class="user-btn${u.role==='manager'?' is-mgr':''}" onclick="login('${u.id}')">
+      <div class="avatar ${u.av||'av-0'}" style="width:44px;height:44px;font-size:15px">${initials(u.name)}</div>
+      <span>${u.name}</span>
+      <small>${u.role==='manager'?'Gestora':'Secretária'}</small>
+    </div>`).join('');
+}
+
+function login(id){
+  currentUser=state.users.find(u=>u.id===id);
+  if(!currentUser)return;
+  document.getElementById('cl-name').textContent=currentUser.name;
+  document.getElementById('cl-date').textContent=TODAY_STR;
+  const av=document.getElementById('cl-av');
+  av.textContent=initials(currentUser.name);
+  av.className='avatar '+(currentUser.av||'av-0');
+  av.style.cssText='width:30px;height:30px;font-size:12px';
+  const mgr=currentUser.role==='manager';
+  document.getElementById('btn-panel').style.display=mgr?'flex':'none';
+  document.getElementById('btn-cfg').style.display=mgr?'flex':'none';
+  showScreen('sc-checklist');
+  switchTab('daily');
+}
+
+function logout(){currentUser=null;showScreen('sc-login');renderLogin();}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showModal(id){document.getElementById(id).classList.add('open');}
+function hideModal(id){document.getElementById(id).classList.remove('open');editingUserId=null;editingTaskId=null;editingTaskType=null;}
+
+function askCfgPassword(){
+  document.getElementById('cfg-pw-input').value='';
+  document.getElementById('cfg-pw-error').textContent='';
+  showModal('modal-password');
+  setTimeout(()=>document.getElementById('cfg-pw-input').focus(),100);
+}
+
+function checkPassword(){
+  const val=document.getElementById('cfg-pw-input').value;
+  if(val===state.cfgPassword){
+    hideModal('modal-password');
+    showCfg();
+  } else {
+    document.getElementById('cfg-pw-error').textContent='Senha incorreta. Tente novamente.';
+  }
+}
+
+function changePassword(){
+  const cur=document.getElementById('pw-current').value;
+  const nw=document.getElementById('pw-new').value.trim();
+  const cf=document.getElementById('pw-confirm').value.trim();
+  const msg=document.getElementById('pw-msg');
+  if(cur!==state.cfgPassword){msg.textContent='Senha atual incorreta.';return;}
+  if(!nw){msg.textContent='A nova senha não pode estar vazia.';return;}
+  if(nw!==cf){msg.textContent='As senhas não coincidem.';return;}
+  state.cfgPassword=nw;
+  saveState();
+  document.getElementById('pw-current').value='';
+  document.getElementById('pw-new').value='';
+  document.getElementById('pw-confirm').value='';
+  msg.style.color='#1B6B3A';
+  msg.textContent='Senha alterada com sucesso!';
+  setTimeout(()=>{msg.textContent='';msg.style.color='#c0392b';},3000);
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.getElementById('tab-d').classList.toggle('active',tab==='daily');
+  document.getElementById('tab-w').classList.toggle('active',tab==='weekly');
+  renderChecklist();
+}
+
+function renderChecklist(){
+  const tasks=currentTab==='daily'?state.dailyTasks:state.weeklyTasks;
+  const list=document.getElementById('task-list');
+  if(!tasks.length){list.innerHTML='<div class="empty">Nenhuma tarefa cadastrada</div>';return;}
+  const checks=tasks.map(t=>getCheck(currentUser.id,currentTab,t.id));
+  const done=checks.filter(Boolean).length;
+  const pct=Math.round(done/tasks.length*100);
+  document.getElementById('prog-lbl').textContent=`${done} de ${tasks.length} concluídas`;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-bar').style.width=pct+'%';
+  const badge=currentTab==='daily'?'<span class="badge bd">diária</span>':'<span class="badge bw">semanal</span>';
+  list.innerHTML=tasks.map((t,i)=>`
+    <div class="card">
+      <div class="row" onclick="toggleTask('${t.id}')">
+        <div class="task-check${checks[i]?' checked':''}"></div>
+        <div style="flex:1">
+          <div class="task-text${checks[i]?' done':''}">${t.text}${badge}</div>
+          <div class="task-time">⏱ ${t.time}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleTask(taskId){
+  const cur=getCheck(currentUser.id,currentTab,taskId);
+  setCheck(currentUser.id,currentTab,taskId,!cur);
+  renderChecklist();
+}
+
+function showPanel(){
+  panelTab='daily';
+  document.getElementById('ptab-d').classList.add('active');
+  document.getElementById('ptab-w').classList.remove('active');
+  showScreen('sc-panel');
+  renderPanel();
+}
+
+function switchPanelTab(tab){
+  panelTab=tab;
+  document.getElementById('ptab-d').classList.toggle('active',tab==='daily');
+  document.getElementById('ptab-w').classList.toggle('active',tab==='weekly');
+  renderPanel();
+}
+
+function renderPanel(){
+  const tasks=panelTab==='daily'?state.dailyTasks:state.weeklyTasks;
+  const secretaries=state.users.filter(u=>u.role==='secretary');
+  if(!secretaries.length){
+    document.getElementById('panel-members').innerHTML='<div class="empty">Nenhuma secretária cadastrada ainda</div>';
+    document.getElementById('panel-stats').innerHTML='';
+    return;
+  }
+  const results=secretaries.map(u=>{
+    const checks=tasks.map(t=>getCheck(u.id,panelTab,t.id));
+    const done=checks.filter(Boolean).length;
+    return{...u,done,total:tasks.length,pct:tasks.length?Math.round(done/tasks.length*100):0};
+  });
+  const totalDone=results.reduce((a,r)=>a+r.done,0);
+  const avg=results.length?Math.round(results.reduce((a,r)=>a+r.pct,0)/results.length):0;
+  const full=results.filter(r=>r.pct===100).length;
+  document.getElementById('panel-stats').innerHTML=`
+    <div class="stat"><div class="stat-num">${avg}%</div><div class="stat-lbl">Média geral</div></div>
+    <div class="stat"><div class="stat-num">${totalDone}</div><div class="stat-lbl">Tarefas feitas</div></div>
+    <div class="stat"><div class="stat-num">${full}</div><div class="stat-lbl">Com 100%</div></div>`;
+  document.getElementById('panel-members').innerHTML=results.map(r=>`
+    <div class="member-row">
+      <div class="avatar ${r.av||'av-0'}" style="width:36px;height:36px;font-size:13px">${initials(r.name)}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:#1a1a1a">${r.name}</div>
+        <div style="font-size:11px;color:#888">${r.done} de ${r.total} tarefas</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="mini-bar-bg"><div class="mini-bar" style="width:${r.pct}%"></div></div>
+        <span style="font-size:12px;font-weight:500;color:#1a1a1a;min-width:32px;text-align:right">${r.pct}%</span>
+      </div>
+    </div>`).join('');
+}
+
+function showCfg(){
+  showScreen('sc-cfg');
+  renderCfg();
+}
+
+function renderCfg(){
+  document.getElementById('cfg-users').innerHTML=state.users.map(u=>`
+    <div class="cfg-row">
+      <div class="avatar ${u.av||'av-0'}" style="width:32px;height:32px;font-size:12px">${initials(u.name)}</div>
+      <div style="flex:1"><div class="cfg-name">${u.name}</div><div class="cfg-sub">${u.role==='manager'?'Gestora':'Secretária'}</div></div>
+      <button class="action-btn" onclick="editUser('${u.id}')">Editar</button>
+      ${u.id!=='mgr'?`<button class="action-btn del-btn" onclick="deleteUser('${u.id}')">Remover</button>`:''}
+    </div>`).join('');
+  const renderTasks=(tasks,type)=>tasks.length?tasks.map(t=>`
+    <div class="cfg-row">
+      <div style="flex:1"><div class="cfg-name">${t.text}</div><div class="cfg-sub">${t.time}</div></div>
+      <button class="action-btn" onclick="openTaskModal('${type}','${t.id}')">Editar</button>
+      <button class="action-btn del-btn" onclick="deleteTask('${type}','${t.id}')">Remover</button>
+    </div>`).join(''):'<div class="empty">Nenhuma tarefa cadastrada</div>';
+  document.getElementById('cfg-daily').innerHTML=renderTasks(state.dailyTasks,'daily');
+  document.getElementById('cfg-weekly').innerHTML=renderTasks(state.weeklyTasks,'weekly');
+}
+
+function editUser(id){
+  const u=state.users.find(x=>x.id===id);if(!u)return;
+  editingUserId=id;
+  document.getElementById('modal-user-title').textContent='Editar usuária';
+  document.getElementById('u-name').value=u.name;
+  document.getElementById('u-role').value=u.role;
+  showModal('modal-add-user');
+}
+
+function saveUser(){
+  const name=document.getElementById('u-name').value.trim();
+  const role=document.getElementById('u-role').value;
+  if(!name)return;
+  if(editingUserId){
+    const u=state.users.find(x=>x.id===editingUserId);
+    if(u){u.name=name;u.role=role;}
+  } else {
+    const idx=state.users.filter(u=>u.role==='secretary').length%AV_COLORS.length;
+    state.users.push({id:uid_gen(),name,role,av:AV_COLORS[idx]});
+  }
+  saveState();hideModal('modal-add-user');
+  document.getElementById('u-name').value='';
+  renderCfg();renderLogin();
+}
+
+function deleteUser(id){
+  if(!confirm('Remover esta usuária?'))return;
+  state.users=state.users.filter(u=>u.id!==id);
+  saveState();renderCfg();renderLogin();
+}
+
+function openTaskModal(type,id){
+  editingTaskId=id;editingTaskType=type;
+  document.getElementById('modal-task-title').textContent=id?'Editar tarefa':'Nova tarefa';
+  document.getElementById('t-type').value=type;
+  if(id){
+    const tasks=type==='daily'?state.dailyTasks:state.weeklyTasks;
+    const t=tasks.find(x=>x.id===id);
+    if(t){document.getElementById('t-text').value=t.text;document.getElementById('t-time').value=t.time;}
+  } else {
+    document.getElementById('t-text').value='';
+    document.getElementById('t-time').value='';
+  }
+  showModal('modal-task');
+}
+
+function saveTask(){
+  const text=document.getElementById('t-text').value.trim();
+  const time=document.getElementById('t-time').value.trim();
+  const type=document.getElementById('t-type').value;
+  if(!text)return;
+  const list=type==='daily'?state.dailyTasks:state.weeklyTasks;
+  if(editingTaskId){const t=list.find(x=>x.id===editingTaskId);if(t){t.text=text;t.time=time||'—';}}
+  else list.push({id:uid_gen(),text,time:time||'—'});
+  saveState();hideModal('modal-task');
+  document.getElementById('t-text').value='';
+  document.getElementById('t-time').value='';
+  renderCfg();
+}
+
+function deleteTask(type,id){
+  if(!confirm('Remover esta tarefa?'))return;
+  if(type==='daily')state.dailyTasks=state.dailyTasks.filter(t=>t.id!==id);
+  else state.weeklyTasks=state.weeklyTasks.filter(t=>t.id!==id);
+  saveState();renderCfg();
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+loadState();renderLogin();
+</script>
+</body>
+</html>
