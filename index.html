@@ -97,6 +97,10 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
 /* CFG ROWS */
 .cfg-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .cfg-row:last-child{border-bottom:none}
+.drag-handle{cursor:grab;color:var(--text3);font-size:16px;padding:0 4px;flex-shrink:0;user-select:none}
+.drag-handle:active{cursor:grabbing}
+.cfg-row.dragging{opacity:.4;background:var(--cream)}
+.cfg-row.drag-over{border-top:2px solid var(--red)}
 .cfg-name{flex:1;font-size:13px;color:var(--text);font-weight:500}
 .cfg-sub{font-size:11px;color:var(--text3)}
 .action-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text2);transition:all .15s;font-family:'Poppins',sans-serif}
@@ -840,16 +844,65 @@ function renderCfg(){
       <button class="action-btn" onclick="editUser('${u.id}')">Editar</button>
       ${u.id!=='mgr'?`<button class="action-btn del-btn" onclick="deleteUser('${u.id}')">Remover</button>`:''}
     </div>`).join('');
-  const rt=(tasks,type)=>tasks.length?tasks.map(t=>`
-    <div class="cfg-row">
-      <div style="flex:1"><div class="cfg-name">${t.text}</div><div class="cfg-sub">${t.time}</div></div>
-      <button class="action-btn" onclick="openTaskModal('${type}','${t.id}')">Editar</button>
-      <button class="action-btn del-btn" onclick="deleteTask('${type}','${t.id}')">Remover</button>
-    </div>`).join(''):'<div class="empty">Nenhuma tarefa</div>';
+
+  const rt=(tasks,type)=>{
+    if(!tasks.length) return '<div class="empty">Nenhuma tarefa</div>';
+    return tasks.map((t,i)=>`
+      <div class="cfg-row" draggable="true" data-id="${t.id}" data-type="${type}"
+        ondragstart="onDragStart(event)"
+        ondragover="onDragOver(event)"
+        ondragleave="onDragLeave(event)"
+        ondrop="onDrop(event,'${type}')">
+        <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
+        <div style="flex:1"><div class="cfg-name">${t.text}</div><div class="cfg-sub">${t.time}</div></div>
+        <button class="action-btn" onclick="openTaskModal('${type}','${t.id}')">Editar</button>
+        <button class="action-btn del-btn" onclick="deleteTask('${type}','${t.id}')">Remover</button>
+      </div>`).join('');
+  };
   document.getElementById('cfg-daily').innerHTML=rt(state.dailyTasks,'daily');
   document.getElementById('cfg-weekly').innerHTML=rt(state.weeklyTasks,'weekly');
   renderHolidaysList();
 }
+
+let dragSrcId=null;
+
+function onDragStart(e){
+  dragSrcId=e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+
+function onDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const row=e.currentTarget;
+  if(row.dataset.id!==dragSrcId) row.classList.add('drag-over');
+}
+
+function onDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onDrop(e,type){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const targetId=e.currentTarget.dataset.id;
+  if(!dragSrcId||dragSrcId===targetId) return;
+  const list=type==='daily'?state.dailyTasks:state.weeklyTasks;
+  const srcIdx=list.findIndex(t=>t.id===dragSrcId);
+  const tgtIdx=list.findIndex(t=>t.id===targetId);
+  if(srcIdx===-1||tgtIdx===-1) return;
+  const [moved]=list.splice(srcIdx,1);
+  list.splice(tgtIdx,0,moved);
+  saveState();
+  renderCfg();
+}
+
+document.addEventListener('dragend',()=>{
+  document.querySelectorAll('.cfg-row').forEach(r=>{
+    r.classList.remove('dragging','drag-over');
+  });
+});
 
 function editUser(id){
   const u=state.users.find(x=>x.id===id);if(!u)return;
