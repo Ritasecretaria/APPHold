@@ -471,18 +471,6 @@ const STATUS_OPTIONS=[
   {value:'cancelado',label:'Cancelado',icon:'✕'}
 ];
 
-function statusKey(eventId){
-  return `holdon_status_${currentTodayDate}_${eventId}`;
-}
-
-function getStatus(eventId){
-  return localStorage.getItem(statusKey(eventId))||'aguardando';
-}
-
-function setStatus(eventId,val){
-  localStorage.setItem(statusKey(eventId),val);
-}
-
 function statusMeta(val){
   return STATUS_OPTIONS.find(s=>s.value===val)||STATUS_OPTIONS[0];
 }
@@ -542,8 +530,8 @@ function renderTodayEvents(){
   listEl.innerHTML=html;
 }
 
-function changeStatus(eventId,val){
-  setStatus(eventId,val);
+async function changeStatus(eventId,val){
+  await setStatus(eventId,val);
   renderTodayEvents();
 }
 
@@ -597,47 +585,101 @@ const NOTIF_SCHEDULE=[
   [18,0,'⚠️ Verifique: alguma sessão sem confirmação?'],
 ];
 
-let state={users:[],dailyTasks:[],weeklyTasks:[],cfgPassword:DEFAULT_PW};
+let state={users:[],dailyTasks:[],weeklyTasks:[],holidays:[]};
+let serverChecks={};
+let serverConfirmations={};
 let currentUser=null,currentTab='daily',panelTab='daily';
 let editingUserId=null,editingTaskId=null,notifGranted=false;
+let cfgPassword='Hold2026';
 
-function loadState(){
-  try{const r=localStorage.getItem(SK);if(r)state=JSON.parse(r);}catch(e){}
-  if(!state.cfgPassword)state.cfgPassword=DEFAULT_PW;
-  if(!state.holidays)state.holidays=[];
-  if(!state.users||!state.users.length){
-    state={
-      cfgPassword:DEFAULT_PW,
-      holidays:[],
-      users:[{id:'mgr',name:'Gestora',role:'manager',av:'av-mgr'}],
-      dailyTasks:[
-        {id:'d1',text:'Recepção e saudação de leads recebidos',time:'Ao receber'},
-        {id:'d2',text:'Enviar informações e conduzir ao agendamento',time:'Ao receber'},
-        {id:'d3',text:'Confirmar pagamentos e registrar na agenda',time:'Ao receber'},
-        {id:'d4',text:'1ª confirmação de presença — sessões do dia',time:'08h–09h'},
-        {id:'d5',text:'Enviar links — sessões até 12h',time:'18h do dia anterior'},
-        {id:'d6',text:'2ª confirmação de presença',time:'13h–14h'},
-        {id:'d7',text:'Enviar links — sessões após 12h',time:'11h'},
-        {id:'d8',text:'3ª confirmação de presença',time:'17h'},
-        {id:'d9',text:'Aviso de desmarcação por falta de resposta',time:'18h se necessário'},
-        {id:'d10',text:'Mensagem pós-sessão + proposta de novo agendamento',time:'≥1h após sessão'},
-      ],
-      weeklyTasks:[
-        {id:'w1',text:'Atualizar planilha de pacientes',time:'Semanal'},
-        {id:'w2',text:'Verificar pacotes próximos do vencimento',time:'Semanal'},
-        {id:'w3',text:'Atualizar planilha Controle Financeiro',time:'Semanal'},
-        {id:'w4',text:'Anotar cobranças com data fixa na agenda',time:'Semanal'},
-        {id:'w5',text:'Revisar agenda da semana seguinte',time:'Semanal'},
-      ]
-    };
-    saveState();
+// ── ESTADO CENTRALIZADO NO SERVIDOR ────────────────────────────────────────
+
+async function loadState(){
+  // Mostra loading na tela de login
+  document.getElementById('login-grid').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;grid-column:1/-1">Carregando...</div>';
+  try {
+    const [cfgRes, checksRes, confirmRes] = await Promise.all([
+      fetch(`${SERVER_URL}/config`),
+      fetch(`${SERVER_URL}/checks`),
+      fetch(`${SERVER_URL}/confirmations`),
+    ]);
+    if(cfgRes.ok) {
+      const cfg = await cfgRes.json();
+      state.users = cfg.users || [];
+      state.dailyTasks = cfg.dailyTasks || [];
+      state.weeklyTasks = cfg.weeklyTasks || [];
+      state.holidays = cfg.holidays || [];
+    }
+    if(checksRes.ok) serverChecks = await checksRes.json();
+    if(confirmRes.ok) serverConfirmations = await confirmRes.json();
+  } catch(e) {
+    console.error('Erro ao carregar dados do servidor:', e);
+    // Fallback: dados mínimos para não travar o app
+    if(!state.users.length) state.users=[{id:'mgr',name:'Gestora',role:'manager',av:'av-mgr'}];
   }
+  renderLogin();
 }
 
-function saveState(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
-function ck(uid,type,tid){const p=type==='daily'?TODAY_KEY:WEEK_KEY;return`hk_${uid}_${type}_${p}_${tid}`;}
-function getCheck(uid,type,tid){return localStorage.getItem(ck(uid,type,tid))==='1';}
-function setCheck(uid,type,tid,v){if(v)localStorage.setItem(ck(uid,type,tid),'1');else localStorage.removeItem(ck(uid,type,tid));}
+async function saveConfig(data){
+  try {
+    await fetch(`${SERVER_URL}/config`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ password: cfgPassword, data })
+    });
+  } catch(e){ console.error('Erro ao salvar config:', e); }
+}
+
+async function saveState(){
+  await saveConfig({
+    users: state.users,
+    dailyTasks: state.dailyTasks,
+    weeklyTasks: state.weeklyTasks,
+    holidays: state.holidays,
+  });
+}
+
+function ck(uid,type,tid){
+  const p=type==='daily'?TODAY_KEY:WEEK_KEY;
+  return `${uid}_${type}_${p}_${tid}`;
+}
+
+function getCheck(uid,type,tid){
+  return serverChecks[ck(uid,type,tid)]===true;
+}
+
+async function setCheck(uid,type,tid,v){
+  const key=ck(uid,type,tid);
+  if(v) serverChecks[key]=true; else delete serverChecks[key];
+  try {
+    await fetch(`${SERVER_URL}/checks`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key,value:v})
+    });
+  } catch(e){ console.error('Erro ao salvar check:', e); }
+}
+
+function statusKey(eventId){
+  return `${currentTodayDate}_${eventId}`;
+}
+
+function getStatus(eventId){
+  return serverConfirmations[statusKey(eventId)]||'aguardando';
+}
+
+async function setStatus(eventId,val){
+  const key=statusKey(eventId);
+  serverConfirmations[key]=val;
+  try {
+    await fetch(`${SERVER_URL}/confirmations`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key,status:val})
+    });
+  } catch(e){ console.error('Erro ao salvar confirmação:', e); }
+}
+
 function uid_gen(){return 't'+Date.now()+Math.random().toString(36).slice(2,6);}
 function initials(n){return n.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
 
@@ -754,9 +796,9 @@ function renderChecklist(){
     </div>`).join('');
 }
 
-function toggleTask(tid){
+async function toggleTask(tid){
   const cur=getCheck(currentUser.id,currentTab,tid);
-  setCheck(currentUser.id,currentTab,tid,!cur);
+  await setCheck(currentUser.id,currentTab,tid,!cur);
   renderChecklist();
 }
 
@@ -816,22 +858,32 @@ function askCfgPassword(){
 
 function checkPassword(){
   const val=document.getElementById('cfg-pw-input').value;
-  if(val===state.cfgPassword){hideModal('modal-password');showCfg();}
+  if(val===cfgPassword){hideModal('modal-password');showCfg();}
   else document.getElementById('cfg-pw-error').textContent='Senha incorreta. Tente novamente.';
 }
 
-function changePassword(){
+async function changePassword(){
   const cur=document.getElementById('pw-current').value;
   const nw=document.getElementById('pw-new').value.trim();
   const cf=document.getElementById('pw-confirm').value.trim();
   const msg=document.getElementById('pw-msg');
-  if(cur!==state.cfgPassword){msg.textContent='Senha atual incorreta.';return;}
+  if(cur!==cfgPassword){msg.textContent='Senha atual incorreta.';return;}
   if(!nw){msg.textContent='A nova senha não pode estar vazia.';return;}
   if(nw!==cf){msg.textContent='As senhas não coincidem.';return;}
-  state.cfgPassword=nw;saveState();
-  ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
-  msg.style.color='#1B6B3A';msg.textContent='Senha alterada com sucesso!';
-  setTimeout(()=>{msg.textContent='';msg.style.color='#c0392b';},3000);
+  try {
+    const res=await fetch(`${SERVER_URL}/config/password`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({currentPassword:cur,newPassword:nw})
+    });
+    if(!res.ok) throw new Error();
+    cfgPassword=nw;
+    ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
+    msg.style.color='#1B6B3A';msg.textContent='Senha alterada com sucesso!';
+    setTimeout(()=>{msg.textContent='';msg.style.color='#c0392b';},3000);
+  } catch(e){
+    msg.textContent='Erro ao alterar senha. Tente novamente.';
+  }
 }
 
 function showCfg(){showScreen('sc-cfg');renderCfg();}
@@ -975,7 +1027,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
 });
 
-loadState();renderLogin();
+loadState();
 </script>
 </body>
 </html>
