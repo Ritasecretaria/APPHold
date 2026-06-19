@@ -140,6 +140,10 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
 .nav-row{display:flex;gap:6px;margin-bottom:18px;background:var(--cream);border-radius:14px;padding:4px}
 .nav-btn{flex:1;padding:9px 10px;border-radius:11px;font-size:12px;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .2s;font-family:'Poppins',sans-serif;font-weight:500;text-align:center}
 .nav-btn.active{background:var(--navy);color:var(--white);box-shadow:0 2px 8px rgba(19,64,95,.25)}
+.day-block{margin-bottom:24px;padding-bottom:4px;border-bottom:1px dashed var(--border)}
+.day-block:last-child{border-bottom:none}
+.day-header{font-family:'Marcellus',serif;font-size:15px;color:var(--navy);font-weight:400;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.day-tag{background:var(--cream-dark);color:var(--text3);font-size:10px;padding:2px 8px;border-radius:99px;font-family:'Poppins',sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.03em}
 .therapist-group{margin-bottom:18px}
 .therapist-header{font-size:12px;font-weight:600;color:var(--red-dark);margin-bottom:8px;padding-left:2px;display:flex;align-items:center;gap:6px}
 .therapist-header .count{background:var(--pink-pale);color:var(--red-dark);font-size:10px;padding:1px 7px;border-radius:99px;font-weight:500}
@@ -366,6 +370,7 @@ const SERVER_URL='https://holdonserver.onrender.com';
 
 let mainTab='today';
 let todayEventsCache=[];
+let todayDaysCache=[];
 let currentTodayDate=null;
 
 function switchMainTab(tab){
@@ -436,26 +441,40 @@ async function loadTodayEvents(){
   const listEl=document.getElementById('today-list');
   const summaryEl=document.getElementById('today-summary-text');
   const dateLabelEl=document.getElementById('today-date-label');
-  listEl.innerHTML='<div class="loading-state">Buscando próximo dia útil de atendimento...</div>';
+  listEl.innerHTML='<div class="loading-state">Buscando agenda dos próximos dias...</div>';
   summaryEl.textContent='Carregando...';
   dateLabelEl.textContent='Carregando data...';
 
   try {
     const holidaysParam=getHolidays().join(',');
-    const res=await fetch(`${SERVER_URL}/next-business-day?holidays=${encodeURIComponent(holidaysParam)}`);
+    const res=await fetch(`${SERVER_URL}/agenda-bridge?holidays=${encodeURIComponent(holidaysParam)}`);
     if(!res.ok) throw new Error('Servidor retornou erro');
     const data=await res.json();
 
-    if(!data.date){
-      dateLabelEl.textContent='Nenhum dia útil encontrado';
+    if(!data.days||!data.days.length){
+      dateLabelEl.textContent='Nenhum dia encontrado';
       summaryEl.textContent='';
-      listEl.innerHTML='<div class="empty">Nenhum agendamento encontrado nos próximos 14 dias</div>';
+      listEl.innerHTML='<div class="empty">Nenhum agendamento encontrado</div>';
       return;
     }
 
-    todayEventsCache=data.events||[];
-    currentTodayDate=data.date;
-    dateLabelEl.textContent='Confirmações para '+formatDateLabel(data.date);
+    // Marca cada evento com a data do dia a que pertence (necessário para a chave de status)
+    todayDaysCache=data.days.map(d=>({
+      date:d.date,
+      isSecretaryWorkday:d.isSecretaryWorkday,
+      events:(d.events||[]).map(ev=>({...ev,dayDate:d.date}))
+    }));
+
+    // Achata tudo numa lista única para os cálculos de resumo/cópia que já existiam
+    todayEventsCache=todayDaysCache.flatMap(d=>d.events);
+
+    if(todayDaysCache.length===1){
+      dateLabelEl.textContent='Confirmações para '+formatDateLabel(todayDaysCache[0].date);
+    } else {
+      const first=formatDateLabel(todayDaysCache[0].date);
+      const last=formatDateLabel(todayDaysCache[todayDaysCache.length-1].date);
+      dateLabelEl.textContent=`Confirmações antecipadas: ${first} até ${last}`;
+    }
     renderTodayEvents();
   } catch(err){
     dateLabelEl.textContent='';
@@ -485,73 +504,96 @@ function renderTodayEvents(){
   const summaryEl=document.getElementById('today-summary-text');
 
   if(!todayEventsCache.length){
-    listEl.innerHTML='<div class="empty">Nenhum agendamento encontrado para esse dia</div>';
+    listEl.innerHTML='<div class="empty">Nenhum agendamento encontrado para esse período</div>';
     summaryEl.textContent='Nenhum agendamento';
     return;
   }
 
-  const confirmedCount=todayEventsCache.filter(e=>getStatus(e.id)==='confirmado').length;
+  const confirmedCount=todayEventsCache.filter(e=>getStatus(e)==='confirmado').length;
   summaryEl.textContent=`${confirmedCount} de ${todayEventsCache.length} confirmados`;
 
-  const byTherapist={};
-  todayEventsCache.forEach(ev=>{
-    if(!byTherapist[ev.therapist]) byTherapist[ev.therapist]=[];
-    byTherapist[ev.therapist].push(ev);
-  });
-
   let html=`<div style="margin-bottom:14px">
-    <button class="refresh-btn" style="width:100%;justify-content:center" onclick="copyAgenda(null)">📋 Copiar agenda completa do dia</button>
+    <button class="refresh-btn" style="width:100%;justify-content:center" onclick="copyAgenda(null,null)">📋 Copiar agenda completa do período</button>
   </div>`;
 
-  for(const therapist in byTherapist){
-    const events=byTherapist[therapist];
-    const confirmed=events.filter(e=>getStatus(e.id)==='confirmado').length;
-    html+=`<div class="therapist-group">
-      <div class="therapist-header" style="justify-content:space-between">
-        <span>${therapist} <span class="count">${confirmed}/${events.length}</span></span>
-        <button class="action-btn" style="font-size:11px;padding:3px 9px" onclick="copyAgenda('${therapist.replace(/'/g,"\\'")}')">📋 Copiar</button>
-      </div>
-      <div class="card">`;
-    events.forEach((ev,i)=>{
-      const status=getStatus(ev.id);
-      html+=`<div class="patient-row" ${i<events.length-1?'style="border-bottom:1px solid var(--border)"':''}>
-        <div class="patient-time">${formatTime(ev.time)}</div>
-        <div class="patient-info">
-          <div class="patient-name">${ev.patient}</div>
-          <div class="patient-status">${statusLabel(status)}</div>
-        </div>
-        <select class="status-select status-${status}" onchange="changeStatus('${ev.id}',this.value)">
-          ${STATUS_OPTIONS.map(s=>`<option value="${s.value}" ${s.value===status?'selected':''}>${s.icon} ${s.label}</option>`).join('')}
-        </select>
+  todayDaysCache.forEach(day=>{
+    if(!day.events.length){
+      html+=`<div class="day-block">
+        <div class="day-header">${formatDateLabel(day.date)}${day.isSecretaryWorkday?'':' <span class="day-tag">sem expediente</span>'}</div>
+        <div class="empty">Nenhum paciente agendado</div>
       </div>`;
+      return;
+    }
+
+    const byTherapist={};
+    day.events.forEach(ev=>{
+      if(!byTherapist[ev.therapist]) byTherapist[ev.therapist]=[];
+      byTherapist[ev.therapist].push(ev);
     });
-    html+=`</div></div>`;
-  }
+
+    html+=`<div class="day-block">
+      <div class="day-header">${formatDateLabel(day.date)}${day.isSecretaryWorkday?'':' <span class="day-tag">sem expediente</span>'}
+        <button class="action-btn" style="font-size:11px;padding:3px 9px;margin-left:auto" onclick="copyAgenda(null,'${day.date}')">📋 Copiar dia</button>
+      </div>`;
+
+    for(const therapist in byTherapist){
+      const events=byTherapist[therapist];
+      const confirmed=events.filter(e=>getStatus(e)==='confirmado').length;
+      html+=`<div class="therapist-group">
+        <div class="therapist-header" style="justify-content:space-between">
+          <span>${therapist} <span class="count">${confirmed}/${events.length}</span></span>
+          <button class="action-btn" style="font-size:11px;padding:3px 9px" onclick="copyAgenda('${therapist.replace(/'/g,"\\'")}','${day.date}')">📋 Copiar</button>
+        </div>
+        <div class="card">`;
+      events.forEach((ev,i)=>{
+        const status=getStatus(ev);
+        html+=`<div class="patient-row" ${i<events.length-1?'style="border-bottom:1px solid var(--border)"':''}>
+          <div class="patient-time">${formatTime(ev.time)}</div>
+          <div class="patient-info">
+            <div class="patient-name">${ev.patient}</div>
+            <div class="patient-status">${statusLabel(status)}</div>
+          </div>
+          <select class="status-select status-${status}" onchange="changeStatus('${ev.id}','${ev.dayDate}',this.value)">
+            ${STATUS_OPTIONS.map(s=>`<option value="${s.value}" ${s.value===status?'selected':''}>${s.icon} ${s.label}</option>`).join('')}
+          </select>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+    html+=`</div>`;
+  });
+
   listEl.innerHTML=html;
 }
 
-async function changeStatus(eventId,val){
-  await setStatus(eventId,val);
+async function changeStatus(eventId,dayDate,val){
+  await setStatus(`${dayDate}_${eventId}`,val);
   renderTodayEvents();
 }
 
-function copyAgenda(therapistFilter){
+function copyAgenda(therapistFilter,dayFilter){
   let events=todayEventsCache.slice();
   if(therapistFilter) events=events.filter(e=>e.therapist===therapistFilter);
+  if(dayFilter) events=events.filter(e=>e.dayDate===dayFilter);
 
-  const byTherapist={};
+  const byDay={};
   events.forEach(ev=>{
-    if(!byTherapist[ev.therapist]) byTherapist[ev.therapist]=[];
-    byTherapist[ev.therapist].push(ev);
+    if(!byDay[ev.dayDate]) byDay[ev.dayDate]={};
+    if(!byDay[ev.dayDate][ev.therapist]) byDay[ev.dayDate][ev.therapist]=[];
+    byDay[ev.dayDate][ev.therapist].push(ev);
   });
 
-  let text=`*Agenda — ${formatDateLabel(currentTodayDate)}*\n\n`;
-  for(const therapist in byTherapist){
-    if(!therapistFilter) text+=`*${therapist}*\n`;
-    byTherapist[therapist].forEach(ev=>{
-      const meta=statusMeta(getStatus(ev.id));
-      text+=`${formatTime(ev.time)} ${ev.patient} - ${meta.label}\n`;
-    });
+  let text=dayFilter?`*Agenda — ${formatDateLabel(dayFilter)}*\n\n`:`*Agenda — confirmações antecipadas*\n\n`;
+  for(const dayDate in byDay){
+    if(!dayFilter) text+=`*${formatDateLabel(dayDate)}*\n`;
+    const byTherapist=byDay[dayDate];
+    for(const therapist in byTherapist){
+      if(!therapistFilter) text+=`${therapist}\n`;
+      byTherapist[therapist].forEach(ev=>{
+        const meta=statusMeta(getStatus(ev));
+        text+=`${formatTime(ev.time)} ${ev.patient} - ${meta.label}\n`;
+      });
+    }
     text+=`\n`;
   }
 
@@ -660,16 +702,12 @@ async function setCheck(uid,type,tid,v){
   } catch(e){ console.error('Erro ao salvar check:', e); }
 }
 
-function statusKey(eventId){
-  return `${currentTodayDate}_${eventId}`;
+function getStatus(ev){
+  const key=`${ev.dayDate}_${ev.id}`;
+  return serverConfirmations[key]||'aguardando';
 }
 
-function getStatus(eventId){
-  return serverConfirmations[statusKey(eventId)]||'aguardando';
-}
-
-async function setStatus(eventId,val){
-  const key=statusKey(eventId);
+async function setStatus(key,val){
   serverConfirmations[key]=val;
   try {
     await fetch(`${SERVER_URL}/confirmations`,{
