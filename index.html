@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0056)file:///C:/Users/Dielle%20Goulart/Downloads/index_8.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hold On — Checklist</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="file:///C:/Users/Dielle%20Goulart/Downloads/manifest.json">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -181,9 +181,14 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
       <p>Selecione seu perfil para continuar</p>
     </div>
     <div class="body" style="padding-top:24px">
-      <div class="user-grid" id="login-grid"></div>
+      <div class="user-grid" id="login-grid">
+    <div class="user-btn is-mgr" onclick="login(&#39;mgr&#39;)">
+      <div class="avatar av-mgr" style="width:46px;height:46px;font-size:16px;border:1.5px solid var(--red)">G</div>
+      <span>Gestora</span>
+      <small>Gestora</small>
+    </div></div>
       <div style="text-align:center">
-        <button class="action-btn" onclick="showModal('modal-add-user')">+ Nova usuária</button>
+        <button class="action-btn" onclick="showModal(&#39;modal-add-user&#39;)">+ Nova usuária</button>
       </div>
     </div>
   </div>
@@ -192,7 +197,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
   <div id="sc-checklist" class="screen">
     <div class="topbar">
       <div class="topbar-left">
-        <button class="icon-btn" onclick="logout()" title="Sair">&#8592;</button>
+        <button class="icon-btn" onclick="logout()" title="Sair">←</button>
       </div>
       <div>
         <div class="topbar-title" id="cl-name"></div>
@@ -200,8 +205,8 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
       </div>
       <div class="topbar-right">
         <div id="cl-av" class="avatar av-mgr" style="width:30px;height:30px;font-size:12px"></div>
-        <button class="icon-btn" id="btn-panel" onclick="showPanel()" title="Painel" style="display:none">&#9723;</button>
-        <button class="icon-btn" id="btn-cfg" onclick="askCfgPassword()" title="Configurações" style="display:none">&#9881;</button>
+        <button class="icon-btn" id="btn-panel" onclick="showPanel()" title="Painel" style="display:none">◻</button>
+        <button class="icon-btn" id="btn-cfg" onclick="askCfgPassword()" title="Configurações" style="display:none">⚙</button>
       </div>
     </div>
     <div class="body">
@@ -211,14 +216,14 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
         <button class="notif-btn" onclick="requestNotifPermission()">Ativar</button>
       </div>
       <div class="nav-row">
-        <button class="nav-btn active" id="nav-today" onclick="switchMainTab('today')">📅 Agendas</button>
-        <button class="nav-btn" id="nav-daily" onclick="switchMainTab('daily')">Diárias</button>
-        <button class="nav-btn" id="nav-weekly" onclick="switchMainTab('weekly')">Semanais</button>
+        <button class="nav-btn active" id="nav-today" onclick="switchMainTab(&#39;today&#39;)">📅 Agendas</button>
+        <button class="nav-btn" id="nav-daily" onclick="switchMainTab(&#39;daily&#39;)">Diárias</button>
+        <button class="nav-btn" id="nav-weekly" onclick="switchMainTab(&#39;weekly&#39;)">Semanais</button>
       </div>
 
       <div id="view-today">
         <div class="today-summary" style="flex-direction:column;align-items:flex-start;gap:6px">
-          <span style="font-size:14px;font-weight:600;color:var(--red);font-family:'Playfair Display',serif" id="today-date-label">Carregando data...</span>
+          <span style="font-size:14px;font-weight:600;color:var(--red);font-family:&#39;Playfair Display&#39;,serif" id="today-date-label">Carregando data...</span>
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
             <span style="font-size:12px;color:var(--text3);flex:1" id="today-summary-text">Carregando confirmações...</span>
             <button class="refresh-btn" onclick="loadTodayEvents()">↻ Atualizar</button>
@@ -229,8 +234,8 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
 
       <div id="view-checklist" style="display:none">
       <div class="tab-row">
-        <button class="tab active" id="tab-d" onclick="switchTab('daily')">Diárias</button>
-        <button class="tab" id="tab-w" onclick="switchTab('weekly')">Semanais</button>
+        <button class="tab active" id="tab-d" onclick="switchTab(&#39;daily&#39;)">Diárias</button>
+        <button class="tab" id="tab-w" onclick="switchTab(&#39;weekly&#39;)">Semanais</button>
       </div>
       <div class="prog-wrap">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
@@ -247,14 +252,14 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
   <!-- PAINEL -->
   <div id="sc-panel" class="screen">
     <div class="topbar">
-      <div class="topbar-left"><button class="icon-btn" onclick="showScreen('sc-checklist')">&#8592;</button></div>
+      <div class="topbar-left"><button class="icon-btn" onclick="showScreen(&#39;sc-checklist&#39;)">←</button></div>
       <div><div class="topbar-title">Painel da Gestora</div></div>
       <div class="topbar-right"></div>
     </div>
     <div class="body">
       <div class="tab-row">
-        <button class="tab active" id="ptab-d" onclick="switchPanelTab('daily')">Diárias</button>
-        <button class="tab" id="ptab-w" onclick="switchPanelTab('weekly')">Semanais</button>
+        <button class="tab active" id="ptab-d" onclick="switchPanelTab(&#39;daily&#39;)">Diárias</button>
+        <button class="tab" id="ptab-w" onclick="switchPanelTab(&#39;weekly&#39;)">Semanais</button>
       </div>
       <div class="stat-grid" id="panel-stats"></div>
       <div class="section-label">Por secretária</div>
@@ -265,7 +270,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
   <!-- CONFIGURAÇÕES -->
   <div id="sc-cfg" class="screen">
     <div class="topbar">
-      <div class="topbar-left"><button class="icon-btn" onclick="showScreen('sc-checklist')">&#8592;</button></div>
+      <div class="topbar-left"><button class="icon-btn" onclick="showScreen(&#39;sc-checklist&#39;)">←</button></div>
       <div><div class="topbar-title">Configurações</div></div>
       <div class="topbar-right"></div>
     </div>
@@ -273,35 +278,35 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
       <div class="section-label">Usuárias</div>
       <div class="cfg-section">
         <div id="cfg-users"></div>
-        <button class="add-btn" onclick="showModal('modal-add-user')">+ Adicionar usuária</button>
+        <button class="add-btn" onclick="showModal(&#39;modal-add-user&#39;)">+ Adicionar usuária</button>
       </div>
       <div class="section-label">Tarefas diárias</div>
       <div class="cfg-section">
         <div id="cfg-daily"></div>
-        <button class="add-btn" onclick="openTaskModal('daily',null)">+ Adicionar tarefa diária</button>
+        <button class="add-btn" onclick="openTaskModal(&#39;daily&#39;,null)">+ Adicionar tarefa diária</button>
       </div>
       <div class="section-label">Tarefas semanais</div>
       <div class="cfg-section">
         <div id="cfg-weekly"></div>
-        <button class="add-btn" onclick="openTaskModal('weekly',null)">+ Adicionar tarefa semanal</button>
+        <button class="add-btn" onclick="openTaskModal(&#39;weekly&#39;,null)">+ Adicionar tarefa semanal</button>
       </div>
       <div class="section-label">Feriados / Dias não úteis</div>
       <div class="cfg-section">
         <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5">Dias marcados aqui são pulados automaticamente ao calcular o próximo dia útil de atendimento. Domingos já são pulados por padrão.</div>
         <div id="cfg-holidays"></div>
         <div class="field-label" style="margin-top:0">Adicionar data</div>
-        <input type="date" id="holiday-date-input" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:'Inter',sans-serif">
+        <input type="date" id="holiday-date-input" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:&#39;Inter&#39;,sans-serif">
         <button class="add-btn" style="margin-top:10px" onclick="addHoliday()">+ Marcar como não útil</button>
       </div>
       <div class="section-label">Segurança</div>
       <div class="cfg-section">
         <div style="font-size:13px;color:var(--text2);margin-bottom:12px;font-weight:500">Alterar senha das configurações</div>
         <div class="field-label" style="margin-top:0">Senha atual</div>
-        <input type="password" id="pw-current" placeholder="Digite a senha atual" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:'Inter',sans-serif">
+        <input type="password" id="pw-current" placeholder="Digite a senha atual" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:&#39;Inter&#39;,sans-serif">
         <div class="field-label">Nova senha</div>
-        <input type="password" id="pw-new" placeholder="Nova senha" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:'Inter',sans-serif">
+        <input type="password" id="pw-new" placeholder="Nova senha" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:&#39;Inter&#39;,sans-serif">
         <div class="field-label">Confirmar nova senha</div>
-        <input type="password" id="pw-confirm" placeholder="Repita a nova senha" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:'Inter',sans-serif">
+        <input type="password" id="pw-confirm" placeholder="Repita a nova senha" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--cream);outline:none;font-family:&#39;Inter&#39;,sans-serif">
         <div class="error-msg" id="pw-msg"></div>
         <button class="add-btn" style="margin-top:8px" onclick="changePassword()">Salvar nova senha</button>
       </div>
@@ -315,10 +320,10 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
   <div class="modal">
     <h3>🔒 Acesso restrito</h3>
     <div class="modal-sub">Digite a senha para acessar as configurações.</div>
-    <input type="password" id="cfg-pw-input" placeholder="Senha" onkeydown="if(event.key==='Enter')checkPassword()">
+    <input type="password" id="cfg-pw-input" placeholder="Senha" onkeydown="if(event.key===&#39;Enter&#39;)checkPassword()">
     <div class="error-msg" id="cfg-pw-error"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="hideModal('modal-password')">Cancelar</button>
+      <button class="btn-cancel" onclick="hideModal(&#39;modal-password&#39;)">Cancelar</button>
       <button class="btn-save" onclick="checkPassword()">Entrar</button>
     </div>
   </div>
@@ -336,7 +341,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
       <option value="manager">Gestora</option>
     </select>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="hideModal('modal-add-user')">Cancelar</button>
+      <button class="btn-cancel" onclick="hideModal(&#39;modal-add-user&#39;)">Cancelar</button>
       <button class="btn-save" onclick="saveUser()">Salvar</button>
     </div>
   </div>
@@ -353,7 +358,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
     <div class="field-label">Tipo</div>
     <select id="t-type"><option value="daily">Diária</option><option value="weekly">Semanal</option></select>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="hideModal('modal-task')">Cancelar</button>
+      <button class="btn-cancel" onclick="hideModal(&#39;modal-task&#39;)">Cancelar</button>
       <button class="btn-save" onclick="saveTask()">Salvar</button>
     </div>
   </div>
@@ -362,7 +367,6 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
 <script>
 const AV=['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7'];
 const TODAY_KEY=new Date().toISOString().slice(0,10);
-const WEEK_KEY=(()=>{const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1),m=new Date(d.setDate(diff));return m.toISOString().slice(0,10);})();
 const TODAY_STR=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
 const SK='holdon_v2';
 const DEFAULT_PW='Hold2026';
@@ -682,22 +686,37 @@ async function saveState(){
 }
 
 function ck(uid,type,tid){
-  const p=type==='daily'?TODAY_KEY:WEEK_KEY;
+  // Diárias continuam usando a data de hoje na chave (reset natural à meia-noite).
+  // Semanais NÃO usam mais WEEK_KEY — o servidor controla a expiração de 7 dias
+  // rolantes a partir do momento em que o check foi marcado (campo checkedAt).
+  const p=type==='daily'?TODAY_KEY:'w';
   return `${uid}_${type}_${p}_${tid}`;
 }
 
 function getCheck(uid,type,tid){
-  return serverChecks[ck(uid,type,tid)]===true;
+  const val=serverChecks[ck(uid,type,tid)];
+  if(type==='weekly'){
+    // Formato semanal: { checked:true, checkedAt:"ISO" }. O servidor já remove
+    // (poda) os expirados antes de devolver em /checks, então só precisamos
+    // checar se a entrada existe.
+    return !!(val && val.checked);
+  }
+  return val===true;
 }
 
 async function setCheck(uid,type,tid,v){
   const key=ck(uid,type,tid);
-  if(v) serverChecks[key]=true; else delete serverChecks[key];
+  const isWeekly=type==='weekly';
+  if(v){
+    serverChecks[key]=isWeekly?{checked:true,checkedAt:new Date().toISOString()}:true;
+  } else {
+    delete serverChecks[key];
+  }
   try {
     await fetch(`${SERVER_URL}/checks`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({key,value:v})
+      body:JSON.stringify({key,value:v,isWeekly})
     });
   } catch(e){ console.error('Erro ao salvar check:', e); }
 }
@@ -1067,5 +1086,6 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 
 loadState();
 </script>
-</body>
-</html>
+
+
+</body></html>
