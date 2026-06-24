@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Dielle%20Goulart/Downloads/index_8.html -->
+<!-- saved from url=(0056)file:///C:/Users/Dielle%20Goulart/Downloads/index_9.html -->
 <html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -183,9 +183,19 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);min-height:100vh;d
     <div class="body" style="padding-top:24px">
       <div class="user-grid" id="login-grid">
     <div class="user-btn is-mgr" onclick="login(&#39;mgr&#39;)">
-      <div class="avatar av-mgr" style="width:46px;height:46px;font-size:16px;border:1.5px solid var(--red)">G</div>
-      <span>Gestora</span>
+      <div class="avatar av-mgr" style="width:46px;height:46px;font-size:16px;border:1.5px solid var(--red)">T</div>
+      <span>Tamara</span>
       <small>Gestora</small>
+    </div>
+    <div class="user-btn" onclick="login(&#39;t1782129247178dkpa&#39;)">
+      <div class="avatar av-0" style="width:46px;height:46px;font-size:16px;border:1.5px solid var(--border)">D</div>
+      <span>Dielle</span>
+      <small>Secretária</small>
+    </div>
+    <div class="user-btn" onclick="login(&#39;t1782129252912w4dz&#39;)">
+      <div class="avatar av-1" style="width:46px;height:46px;font-size:16px;border:1.5px solid var(--border)">S</div>
+      <span>Suelen</span>
+      <small>Secretária</small>
     </div></div>
       <div style="text-align:center">
         <button class="action-btn" onclick="showModal(&#39;modal-add-user&#39;)">+ Nova usuária</button>
@@ -375,6 +385,7 @@ const SERVER_URL='https://holdonserver.onrender.com';
 let mainTab='today';
 let todayEventsCache=[];
 let todayDaysCache=[];
+let therapistOrderCache=[];
 let currentTodayDate=null;
 
 function switchMainTab(tab){
@@ -469,6 +480,9 @@ async function loadTodayEvents(){
       events:(d.events||[]).map(ev=>({...ev,dayDate:d.date}))
     }));
 
+    // Ordem dos blocos de terapeuta, definida pela gestora no server.js (THERAPIST_NAMES)
+    therapistOrderCache=data.therapistOrder||[];
+
     // Achata tudo numa lista única para os cálculos de resumo/cópia que já existiam
     todayEventsCache=todayDaysCache.flatMap(d=>d.events);
 
@@ -535,12 +549,24 @@ function renderTodayEvents(){
       byTherapist[ev.therapist].push(ev);
     });
 
+    // Ordena os blocos de terapeuta seguindo a ordem definida no servidor
+    // (therapistOrderCache, vinda de THERAPIST_NAMES no server.js). Terapeutas
+    // que não estiverem na lista (raro) vão para o final, na ordem em que apareceram.
+    const orderedTherapists=Object.keys(byTherapist).sort((a,b)=>{
+      const ia=therapistOrderCache.indexOf(a);
+      const ib=therapistOrderCache.indexOf(b);
+      if(ia===-1&&ib===-1) return 0;
+      if(ia===-1) return 1;
+      if(ib===-1) return -1;
+      return ia-ib;
+    });
+
     html+=`<div class="day-block">
       <div class="day-header">${formatDateLabel(day.date)}${day.isSecretaryWorkday?'':' <span class="day-tag">sem expediente</span>'}
         <button class="action-btn" style="font-size:11px;padding:3px 9px;margin-left:auto" onclick="copyAgenda(null,'${day.date}')">📋 Copiar dia</button>
       </div>`;
 
-    for(const therapist in byTherapist){
+    orderedTherapists.forEach(therapist=>{
       const events=byTherapist[therapist];
       const confirmed=events.filter(e=>getStatus(e)==='confirmado').length;
       html+=`<div class="therapist-group">
@@ -563,7 +589,7 @@ function renderTodayEvents(){
         </div>`;
       });
       html+=`</div></div>`;
-    }
+    });
     html+=`</div>`;
   });
 
