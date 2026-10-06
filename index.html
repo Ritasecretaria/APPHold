@@ -666,33 +666,52 @@ let cfgPassword='Hold2026';
 
 // ── ESTADO CENTRALIZADO NO SERVIDOR ────────────────────────────────────────
 
-async function loadState(){
+// Só permite salvar a config depois que ela foi lida do servidor com sucesso.
+// Evita que, com o servidor "acordando" no Render, o app salve uma lista de
+// usuárias vazia (só a Gestora) por cima da lista verdadeira.
+let configLoaded=false;
+
+async function loadState(attempt=1){
+  const MAX_ATTEMPTS=8;
   // Mostra loading na tela de login
-  document.getElementById('login-grid').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;grid-column:1/-1">Carregando...</div>';
+  const msg = attempt===1 ? 'Carregando...' : 'Servidor acordando, aguarde... (tentativa '+attempt+' de '+MAX_ATTEMPTS+')';
+  document.getElementById('login-grid').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;grid-column:1/-1">'+msg+'</div>';
   try {
     const [cfgRes, checksRes, confirmRes] = await Promise.all([
       fetch(`${SERVER_URL}/config`),
       fetch(`${SERVER_URL}/checks`),
       fetch(`${SERVER_URL}/confirmations`),
     ]);
-    if(cfgRes.ok) {
-      const cfg = await cfgRes.json();
-      state.users = cfg.users || [];
-      state.dailyTasks = cfg.dailyTasks || [];
-      state.weeklyTasks = cfg.weeklyTasks || [];
-      state.holidays = cfg.holidays || [];
-    }
+    if(!cfgRes.ok) throw new Error('config HTTP '+cfgRes.status);
+    const cfg = await cfgRes.json();
+    if(!cfg || !Array.isArray(cfg.users) || !cfg.users.length) throw new Error('config sem usuárias');
+    state.users = cfg.users;
+    state.dailyTasks = cfg.dailyTasks || [];
+    state.weeklyTasks = cfg.weeklyTasks || [];
+    state.holidays = cfg.holidays || [];
     if(checksRes.ok) serverChecks = await checksRes.json();
     if(confirmRes.ok) serverConfirmations = await confirmRes.json();
+    configLoaded=true;
   } catch(e) {
-    console.error('Erro ao carregar dados do servidor:', e);
-    // Fallback: dados mínimos para não travar o app
+    console.error('Erro ao carregar dados do servidor (tentativa '+attempt+'):', e);
+    if(attempt<MAX_ATTEMPTS){
+      setTimeout(()=>loadState(attempt+1), 8000);
+      return;
+    }
+    // Fallback: dados mínimos para não travar o app — mas SEM permitir salvar
     if(!state.users.length) state.users=[{id:'mgr',name:'Gestora',role:'manager',av:'av-mgr'}];
+    document.getElementById('login-grid').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;grid-column:1/-1">Não foi possível falar com o servidor. Recarregue a página em 1 minuto.</div>';
+    return;
   }
   renderLogin();
 }
 
 async function saveConfig(data){
+  if(!configLoaded){
+    console.warn('Config ainda não carregada do servidor — salvamento bloqueado para não apagar dados.');
+    alert('O app ainda não terminou de carregar os dados do servidor. Recarregue a página e tente de novo.');
+    return;
+  }
   try {
     await fetch(`${SERVER_URL}/config`, {
       method:'POST',
