@@ -689,8 +689,11 @@ async function loadState(attempt=1){
     state.dailyTasks = cfg.dailyTasks || [];
     state.weeklyTasks = cfg.weeklyTasks || [];
     state.holidays = cfg.holidays || [];
-    if(checksRes.ok) serverChecks = await checksRes.json();
-    if(confirmRes.ok) serverConfirmations = await confirmRes.json();
+    // Se checks/confirmações vierem com erro (servidor ainda acordando), tenta de novo
+    // em vez de mostrar tudo como "Aguardando".
+    if(!checksRes.ok || !confirmRes.ok) throw new Error('checks/confirmações indisponíveis');
+    serverChecks = await checksRes.json();
+    serverConfirmations = await confirmRes.json();
     configLoaded=true;
   } catch(e) {
     console.error('Erro ao carregar dados do servidor (tentativa '+attempt+'):', e);
@@ -774,12 +777,16 @@ function getStatus(ev){
 async function setStatus(key,val){
   serverConfirmations[key]=val;
   try {
-    await fetch(`${SERVER_URL}/confirmations`,{
+    const r=await fetch(`${SERVER_URL}/confirmations`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({key,status:val})
     });
-  } catch(e){ console.error('Erro ao salvar confirmação:', e); }
+    if(!r.ok) throw new Error('HTTP '+r.status);
+  } catch(e){
+    console.error('Erro ao salvar confirmação:', e);
+    alert('Não consegui salvar o status. Atualize a página e tente de novo.');
+  }
 }
 
 function uid_gen(){return 't'+Date.now()+Math.random().toString(36).slice(2,6);}
